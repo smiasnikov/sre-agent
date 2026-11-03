@@ -6,7 +6,7 @@
 
 | Information | Purpose | Status |
 | --- | --- | --- |
-| **Incident** | Findings, hypotheses and current/prior proposals for one incident | Implemented local state; see [state](state.md) |
+| **Incident** | Findings, hypotheses and current/prior proposals for one incident | Durable relational database in the design; local adapter verified, database adapter pending; see [state](state.md) |
 | **Conversation** | Continue work on one incident | Conversation persistence is a State concern, not cross-incident knowledge |
 | **Service catalogue** | Ownership, dependencies and source mappings | Implemented navigation metadata; runbooks remain deferred |
 | **Reviewed knowledge** | Reuse useful findings across incidents | Planned; no retrieval or knowledge updates implemented |

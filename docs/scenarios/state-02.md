@@ -1,8 +1,9 @@
 # STATE-02: new signal after a proposal
 
-- **Status:** implemented happy path; two SDK runs with synthetic sources and scripted model replies. No live model.
+- **Status:** implemented happy path; two SDK runs with synthetic sources, scripted replies and the local adapter. Database transactions and automatic scheduling remain unimplemented. No live model.
 - **Starting point:** CORE-01 run R1 ended with proposal P1. INC-001 remains open; A1/A2, C1/C2, E1/E2/E3 and five completed source calls are saved.
 - **Boundary:** a trusted upstream system or human has already assigned the new alert to INC-001. Validate the supplied Incident ID and caller scope; do not infer the assignment. Catalogue ownership and source mappings remain valid. No conversation history is required.
+- **Database design:** accept a signal and pending work in one transaction, deduplicating by signal ID. A worker later commits the follow-up transition and marks that signal applied together; in-flight signals must not change the active window. See [State](../state.md).
 
 ## Synthetic inputs
 
@@ -35,8 +36,8 @@
 - **Run lifetime:** P1 does not finish R2. Only an accepted P2 or a blocker/limit ends the new run. No saved remaining quotas are introduced.
 - **Consistency:** signal acceptance, run transition and later updates use atomic revision checks; no evidence is lost or renumbered.
 
-- **Implemented boundary:** an explicit application method validates the assignment/scope and advances the window, archives P1 and its hypotheses, appends A3/A4 and starts R2 in one revision-checked save. Directly rerunning a completed proposal without this transition remains rejected.
+- **Implemented boundary:** an explicit application method validates the assignment/scope and advances the window, archives P1 and its hypotheses, appends A3/A4 and starts R2 in one revision-checked local save. The database adapter must commit these changes together. Directly rerunning a completed proposal without this transition remains rejected.
 - **History:** `proposal_history` holds earlier completed proposals with run number, window and hypotheses; `proposal` holds the current run's proposal. No full card copies or conversation transcripts are required for continuation.
-- **Verification:** `uv run python -m evals.state02`; review `output/state-02/trace.md`, `run-1/` and `run-2/`. Tests reject stale-only/mixed stale citations, invalid assignments and malformed history. Storage format 3 is required; older formats are rejected without migration.
+- **Verification:** `uv run python -m evals.state02`; review `output/state-02/trace.md`, `run-1/` and `run-2/`. Tests reject stale-only/mixed stale citations, invalid assignments and malformed history. The local adapter requires format 3; database migration compatibility is unverified.
 - **Outside scope:** alert correlation, choosing an Incident for an unassigned alert, and merging incidents. An existing assignment does not prove a common root cause.
-- **Deferred:** duplicate/out-of-order signals, changed catalogue mappings, missing fresh telemetry, concurrent triggers, automated resolution and unbounded history retention.
+- **Deferred:** database integration, durable work ownership, duplicate/out-of-order signals, changed catalogue mappings, missing fresh telemetry, concurrent triggers, automated resolution and unbounded history retention.

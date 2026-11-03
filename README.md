@@ -16,13 +16,13 @@ uv run python -m evals
 
 Default runs use real Claude Agent SDK/MCP orchestration with a deterministic mock model and synthetic sources. No real model credentials are needed. Evaluations run CORE-01/02, STATE-01/02 and MP-01; they verify workflow and coordination, not independent reasoning.
 
-The scenario documents include individual run commands. Local runs can use `--state PATH`, then `--state PATH --resume` to retry unfinished work.
+The design uses a durable relational database outside workers for shared Incident state. Transactions save related changes together; revision checks reject stale updates. The database adapter is not implemented; current persistence checks use a local file adapter. Use `--state PATH`, then `--state PATH --resume` for local recovery checks.
 
 ## Current boundaries
 
-- **Assumptions:** one responder and agent on one Unix host, trusted scope/identity, read-only tools, and a shared telemetry window.
-- **Left out:** live integrations, repairs, cross-incident learning and production durability. Local recovery and revision-checked updates are implemented; distributed writers remain planned.
-- **First failure risk:** valid evidence references cannot guarantee sound reasoning. Unsaved reads may repeat after restart; blocking integrations and incident bursts need additional controls.
+- **Assumptions:** a durable relational database with transactional updates, trusted scope/identity, read-only tools, and a shared telemetry window. Current checks use one responder and agent on one Unix host.
+- **Left out:** database integration, automatic scheduling, live integrations, repairs and cross-incident learning. Recovery and revision-checked updates are verified with the local adapter; database durability and cross-host behavior remain unverified.
+- **First failure risks:** valid references cannot guarantee sound reasoning. Growing or stale context can mislead later runs; missing execution coordination can strand or repeat work. Incident bursts can overload model and telemetry capacity.
 
 ## Review guide
 
@@ -30,7 +30,7 @@ The scenario documents include individual run commands. Local runs can use `--st
 | --- | --- |
 | [Core loop](docs/core-loop.md) | Context, tool choice, stopping rules, assumptions and failure risks |
 | [Scenarios and tests](docs/scenarios.md) | Inputs, expected outcomes, test layers and verification limits |
-| [State](docs/state.md) | Local recovery, completed-call reuse and lifecycle limits |
+| [State](docs/state.md) | Durable relational database design, recovery and current verification limits |
 | [Multiplayer](docs/multiplayer.md) | Human decisions, stale proposals and coordination limits |
 | [Scope](docs/scope.md) | Implemented boundaries, omissions and reasons |
 

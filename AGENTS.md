@@ -18,7 +18,7 @@
 - Preserve the distinction between evidence, hypotheses, catalogue metadata, and reviewed knowledge.
 - Enforce tenant scope and permissions in code; prompt guidance is not an authorization boundary.
 - Keep external tools mocked unless the user requests a real integration. Never execute an unapproved action.
-- Keep restart recovery local and explicit. Do not claim exactly-once execution or production durability.
+- Design state around a durable relational database outside workers. Label local-adapter verification separately; do not claim database durability, cross-host coordination or exactly-once execution without verification.
 
 ## Verification and review
 

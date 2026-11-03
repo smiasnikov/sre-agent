@@ -1,96 +1,106 @@
 # State
 
-- **Implemented:** [STATE-01](scenarios/state-01.md) recovers unfinished work in a fresh process; [STATE-02](scenarios/state-02.md) starts a later investigation after an already-assigned alert. Both use synthetic sources and scripted replies.
+- **Design baseline:** a durable relational database outside workers owns Incident state. Worker disks and conversations are disposable; there are no separate snapshot or checkpoint entities.
+- **Verified behavior:** [STATE-01](scenarios/state-01.md) covers fresh-process recovery; [STATE-02](scenarios/state-02.md) covers a later assigned alert. Both use the local adapter, synthetic sources and scripted replies. Database integration and automatic scheduling are not implemented.
 
 ## Assumptions
 
-- The caller-selected record remains accessible after restart; all writers use the same local store adapter.
-- Source reads may repeat if they completed externally but were not saved. No exactly-once action guarantee is needed for these read-only cases.
-- STATE-02 receives a later alert already assigned to the same Checkout Incident; its catalogue mappings remain valid.
+- All writers use tenant-scoped transactions and expected-revision checks against the same authoritative database.
+- Durable storage, compatible migrations and tested backup/restore are operational prerequisites.
+- Source reads may repeat if they completed externally but were not committed. STATE-02 assumes valid catalogue mappings and an alert already assigned to the same Incident.
 
 ## Ownership
 
 | Information | Storage / authority |
 | --- | --- |
-| Incident | Authoritative local record: original/additional alert observations, scope, windows, findings, selected human step, revision, completed calls and proposal history |
-| Current and prior proposals | Current proposal stored separately; earlier proposals retain run number, window, hypotheses, reason, uncertainty and evidence references |
-| Conversation | Fresh SDK conversation from the Incident; no conversation persistence |
-| Trace | Review artifact; not needed for recovery |
+| Incident | Database record: scope, alerts, windows, catalogue, evidence, hypotheses, human-selected step, revision, completed calls and proposal history |
+| Agent run | Bounded investigation; run number/window and proposals belong to the Incident. Live execution status and errors are not currently durable |
+| Pending work — planned | Database records for accepted signals, due rechecks, work ownership and retry state; execution coordination, separate from Incident findings |
+| Conversation | Fresh conversation from the Incident; no conversation persistence |
+| Trace | Review artifact; not recovery authority or a durable audit log |
 
-- Storage format **3** defines data shape; Incident revision tracks accepted updates. Formats 1/2 are rejected; migrations are not implemented.
+## Save and recovery contract
 
-## Conversation decision
+```text
+ Source read / proposed update
+              │
+              ▼
+ Validate result + expected Incident revision
+              │
+              ▼
+ Transaction: findings + completed call + revision
+              │
+           COMMIT
+              │
+       Report tool success
+              │
+       WORKER RESTARTS
+              │
+              ▼
+ Load committed Incident → fresh bounded execution
+```
 
-- **Now:** recover from the Incident only and start a fresh conversation. Some analysis may repeat; completed source calls are still reused.
-- **Future option:** use SDK SessionStore for unfinished conversation continuity. Always load the latest Incident; transcript writes are separate, and missing history falls back to Incident-only recovery.
-- **Follow-up runs:** start a fresh conversation with the new signal/window and relevant prior conclusions marked historical. Do not resume the earlier run's conversation.
+- **Transactions:** save related changes together or save none. Commit findings and completed-call identity before reporting success; keep model and source calls outside the transaction.
+- **Revision checks:** accept an update only if the stored revision matches the one the writer read; reject stale updates to prevent lost writes.
+- **Conflict:** reject a stale revision, reload current state and reassess; keep human decisions. See [Multiplayer](multiplayer.md).
+- **Uncertain commit:** a lost connection may hide a successful commit. Reload and inspect the revision and recorded operation before retrying; revision changes alone do not identify which update succeeded.
+- **Replay identity:** Incident + scope + tool + service + resolved source + window. Reuse committed findings; question wording does not create another request. Source calls are not part of the database transaction.
+- **Run identity:** restart retries unfinished R1; a later assigned alert after P1 starts R2. Each execution gets fresh turn/time limits; no persisted budget entity.
+- **Compatibility:** Incident revision tracks accepted updates; schema version tracks data shape. Compatible migrations and mixed-version rollout rules are required. The local adapter accepts format 3 only; migrations are absent.
 
 ## Incident lifetime
 
 ```text
-            INCIDENT OPEN — same ID
-                        │
-          ┌─────────────▼──────────────┐
-          │ R1: investigate → proposal │
-          └─────────────┬──────────────┘
-                        │ remains open
-                Already-assigned alert
-                        │
-          ┌─────────────▼──────────────┐
-          │ R2: refresh → new proposal│
-          │ Keep R1 findings/history  │
-          └─────────────┬──────────────┘
-                        │
-            Further triggers [planned policy]
-            Confirm resolution [planned]
+            SAME INCIDENT — durable database state
+                           │
+              R1: investigate → proposal P1
+                           │ remains open; worker released
+                  Later assigned signal
+                           │
+              R2: refresh → proposal P2
+                  Keep P1 and earlier evidence
+                           │
+              More triggers / resolution [planned]
 ```
 
-## Process recovery
+- **Follow-up:** archive P1/hypotheses, append new alert observations and advance the window in one revision-checked commit. Preserve human decisions and earlier references.
+- **Freshness:** current readiness requires telemetry from the new window; old observations remain historical. Catalogue refresh and context selection need policies.
 
-```text
- Validated tool result / proposal
-                 │
-                 ▼
- Atomically save Incident + completed call
-                 │
-          PROCESS RESTARTS
-                 │
-                 ▼
- Load and validate scope, format and references
-                 │
-                 ▼
- Fresh SDK execution from the saved Incident
- Same unfinished investigation, fresh limits
-```
+## Execution scheduling — planned
 
-- **Run identity:** restart retries unfinished R1; a new assigned alert after P1 starts R2. Numbers identify investigations, not SDK model turns.
-- **Save boundary:** persist findings and completed calls together before reporting success. Failed saves roll back uncommitted application changes.
-- **Replay identity:** Incident + scope + tool + service + resolved source + window. Return the existing finding; question wording does not create another request.
-- **Follow-up:** archive P1/hypotheses, append new alert observations and advance the window in one revision-checked save. Preserve human decisions and earlier references.
-- **Freshness:** current proposal readiness requires cited telemetry from the new window; older observations remain historical context.
-- **Limits:** fresh SDK turn limits and timeout per execution, no persisted remaining quotas. Lock acquisition defaults to one second; filesystem I/O is not bounded by that timeout.
+- Save an accepted assigned signal and pending work in the same database transaction; acknowledge receipt after commit. Deduplicate redelivery using a stable signal ID. This requires one database, not a separate queue write.
+- Workers claim due work with time-limited ownership; reclaim interrupted work and prevent expired owners from committing job completion. Detailed retry and ownership rules remain open.
+- Only one investigation should be active per Incident; retain signals arriving during it for later processing. A scheduled recheck uses the same work mechanism with a future due time.
+- At follow-up start, consume the saved signal into Incident observations and advance the run in one transaction. Do not change an active run's window on signal arrival.
+- Worker replacement loads the latest Incident. Closure/pause checks, bounded retries and tenant capacity limits remain unimplemented; alert correlation stays upstream.
+
+## Conversation decision
+
+- **Now:** Incident-only recovery with a fresh conversation; some analysis may repeat, but committed source calls are reused.
+- **Future option:** SDK SessionStore for unfinished conversations; always load the latest Incident. Missing history falls back to Incident-only recovery.
+- **Follow-up:** fresh conversation with the new signal/window and relevant prior conclusions marked historical.
 
 ## Lifecycle coverage
 
-| Event | Implemented | Planned |
+| Event | Database design | Current verification / gap |
 | --- | --- | --- |
-| Restart | Fresh-process reload and completed-call reuse without conversation history | Automatic discovery/scheduling of unfinished incidents |
-| Deploy | Reload only if the local record survives and its format remains compatible | Storage outside workers, compatible rollout/migration and cross-host coordination |
-| Six-hour incident | One follow-up investigation with fresh telemetry and preserved history | Repeated long-duration operation, scheduling, catalogue freshness and context selection |
-| Shift handover | Inspect saved findings, selected step/owner and proposal manually | Shared handover view, open questions and responsibility transfer |
+| Restart | Another worker loads committed state and reclaims due work | Fresh-process reload/replay verified locally; automatic recovery and database integration pending |
+| Deploy | Database survives worker replacement; compatible readers/writers share revisions | Database migrations, rollback and mixed-version operation unverified |
+| Six-hour incident | Multiple bounded runs; refresh relevant evidence and retain history | One follow-up verified; scheduling, freshness and context limits pending |
+| Shift handover | Shared findings, current proposal, selected next step/owner and reason | Fields persist locally; shared view, open questions and responsibility transfer pending |
 
 ## Left out and why
 
 | Omission | Reason |
 | --- | --- |
-| Conversation persistence | The Incident is sufficient for current cases; accept some repeated analysis instead of maintaining transcript storage |
-| Ingestion, correlation, scheduling and closure | Explicit application calls isolate lifecycle behavior |
-| Migrations and production storage | Single-host scope; unknown formats fail closed rather than silently changing data |
+| Database adapter and database failure tests | Application recovery was isolated with a local adapter; transaction behavior needs integration verification |
+| Scheduling, correlation and closure | Separate lifecycle responsibilities; only explicit follow-up calls are implemented |
+| Conversation persistence | Accept repeated analysis while retaining structured Incident progress |
 
 ## First failure risks
 
-| Risk | Consequence |
+| Risk | Consequence / required response |
 | --- | --- |
-| Lost local volume or incompatible deployment | Recovery is unavailable; format checks do not restore or migrate records |
-| Growing history or stale mappings | Full cards become noisy/oversized; saved catalogue entries need a refresh policy |
-| Filesystem failure | Atomic replacement does not provide power-loss durability or hard I/O deadlines |
+| Incomplete working context after restart | Incident-only recovery repeats reasoning and may repeat unsaved reads; record important findings and open questions explicitly. Durable open-question fields remain planned |
+| Growing history and stale context | Long incidents can fill model context with outdated findings; select relevant history, refresh mappings and define retention. These policies remain planned |
+| Saved progress without reliable continuation | An Incident record alone cannot schedule or own the next run; durable pending work, deduplication and bounded retry/ownership rules remain planned |

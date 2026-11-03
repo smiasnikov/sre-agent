@@ -37,5 +37,5 @@
 | Checkout health, failed traces, and Payments health | A useful next step is proposed | Accept current evidence references and explicit uncertainty; reject catalogue or invented evidence IDs |
 | An accepted proposal | The run finishes | No additional source calls; no infrastructure change; Incident remains open |
 
-- **Limits:** this scenario covers investigation. Local recovery, follow-up runs and shared updates are verified separately in STATE-01/02 and MP-01.
+- **Limits:** this scenario covers investigation. STATE-01/02 and MP-01 check recovery, follow-up and shared updates with the local adapter; the durable relational database design remains unverified.
 - **Trace:** `uv run python -m agent` writes a step table to `output/core-01/trace.md`; initial model input is readable in `model-input.md`.
