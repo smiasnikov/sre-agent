@@ -31,6 +31,11 @@ The design uses a durable relational database outside workers for shared Inciden
 | [Core loop](docs/core-loop.md) | Context, tool choice, stopping rules, assumptions and failure risks |
 | [Scenarios and tests](docs/scenarios.md) | Inputs, expected outcomes, test layers and verification limits |
 | [Evaluation](docs/evaluation.md) | Judgment criteria, eval-set sources and controls against misleading results |
+| [Shipping changes](docs/shipping-changes.md) | Planned release gates, shadow testing, canaries and rollback |
+| [Monitoring](docs/monitoring.md) | Dashboard signals, paging rules and degraded-quality detection |
+| [Failure and failover](docs/failure-and-failover.md) | Bounded failures, fallback eligibility and graceful degradation |
+| [Cost and latency](docs/cost-and-latency.md) | Measurement, context efficiency and planned execution controls |
+| [Trust and governance](docs/trust-and-governance.md) | Tenant boundaries, audit visibility and planned autonomy controls |
 | [State](docs/state.md) | Durable relational database design, recovery and current verification limits |
 | [Multiplayer](docs/multiplayer.md) | Human decisions, stale proposals and coordination limits |
 | [Scope](docs/scope.md) | Implemented boundaries, omissions and reasons |
