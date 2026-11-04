@@ -20,7 +20,7 @@
 | Deterministic application tests | Scope/schema checks, proposal readiness, stale references, local atomic saves, replay protection and competing processes; lock deadline uses a controlled clock | Does not verify database transactions, database durability, cross-host coordination or model judgment |
 | SDK/MCP integration tests | Real SDK orchestration with a local synthetic Messages API and MCP sources | Tool choices and replies are scripted |
 | Scenario evaluations | Five readable contracts with generated traces; STATE-01 uses two fresh Python processes | Reuses synthetic fixtures and expected replies; not an independent dataset or model benchmark |
-| Semantic evaluation | Planned: held-out incidents, live model runs and human review of evidence use and next-step quality | Not run; no accuracy or reasoning-quality claim |
+| Semantic evaluation | Planned: held-out incidents, live model runs and human review; see [Evaluation](evaluation.md) | Not run; no accuracy or reasoning-quality claim |
 
 - Run `uv run python -m unittest -v` and `uv run python -m evals` from the repository root.
 - A passing SDK result alone is insufficient: scenario checks inspect the Incident, references, tool calls and persisted data.

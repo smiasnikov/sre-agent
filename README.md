@@ -30,6 +30,7 @@ The design uses a durable relational database outside workers for shared Inciden
 | --- | --- |
 | [Core loop](docs/core-loop.md) | Context, tool choice, stopping rules, assumptions and failure risks |
 | [Scenarios and tests](docs/scenarios.md) | Inputs, expected outcomes, test layers and verification limits |
+| [Evaluation](docs/evaluation.md) | Judgment criteria, eval-set sources and controls against misleading results |
 | [State](docs/state.md) | Durable relational database design, recovery and current verification limits |
 | [Multiplayer](docs/multiplayer.md) | Human decisions, stale proposals and coordination limits |
 | [Scope](docs/scope.md) | Implemented boundaries, omissions and reasons |
