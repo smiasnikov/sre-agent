@@ -1,7 +1,7 @@
 # Evaluation
 
 - **Goal:** an evidence-supported diagnostic next step; several answers may be valid.
-- **Implemented:** deterministic tests and five [scripted scenarios](scenarios.md). Real model judgment, recorded interactions and production quality remain unverified.
+- **Implemented:** deterministic tests, five [scripted workflows](scenarios.md) and [EVAL-01](scenarios/eval-01.md): hard checks beside illustrative rubric ratings. Real model judgment and production quality remain unverified.
 
 ## Judgment — planned
 
@@ -41,6 +41,6 @@
 
 ## Limits and risks
 
-- **Deferred:** real-interaction replay, live benchmarks and semantic graders; current checks isolate application behavior. [Release gates](shipping-changes.md) remain planned.
+- **Deferred:** real-interaction replay, live benchmarks and independent semantic grading. EVAL-01's ratings are fixture data; current checks isolate application/report behavior. [Release gates](shipping-changes.md) remain planned.
 - **Risks:** overfitting, grader bias and small samples; use holdouts, human calibration and repeated comparisons.
 - **Reference:** [Block's agent testing pyramid](https://engineering.block.xyz/blog/testing-pyramid-for-ai-agents).

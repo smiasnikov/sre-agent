@@ -18,6 +18,7 @@
 - **Verification boundary:** one responder and agent on one Unix host, local file adapter and mocked external data. No database integration, real UI or chat ingestion is implemented.
 - **Architecture:** small modules, inward dependencies, typed internal structures, runtime validation at external boundaries, Markdown agent guidance, and code-enforced scope.
 - **Verification:** [scenario tables and test layers](scenarios.md) distinguish deterministic integration checks from independent model evaluation.
+- **Evaluation example:** [EVAL-01](scenarios/eval-01.md) compares application hard checks with illustrative review ratings; independent semantic grading and live benchmarks remain planned.
 
 ## Outside this implementation
 

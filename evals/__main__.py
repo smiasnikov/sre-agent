@@ -1,7 +1,8 @@
 """Run the reviewed deterministic scenarios in catalogue order."""
 
 from agent.cli import OUTPUT_ROOT, run_scenario
-from . import SCENARIOS, STATE01, STATE02, MP01
+from . import SCENARIOS, STATE01, STATE02, MP01, EVAL01
+from .eval01 import run_evaluation
 from .state01 import run_restart
 from .mp01 import assess as assess_multiplayer, run_multiplayer
 from .state02 import assess as assess_followup, run_followup
@@ -34,4 +35,10 @@ print("Trace: " + str(output / "trace.md"))
 print(
     "Evidence: real SDK orchestration; synthetic model and source data. Model quality is not assessed."
 )
+output = OUTPUT_ROOT / EVAL01.lower()
+failures = run_evaluation(output)
+failed = failed or bool(failures)
+print(EVAL01 + ": " + ("PASSED" if not failures else "FAILED: " + ", ".join(failures)))
+print("Report: " + str(output / "report.md"))
+print(EVAL01 + ": application hard checks and illustrative review fixtures; no model judge.")
 raise SystemExit(failed)

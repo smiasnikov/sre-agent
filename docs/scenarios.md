@@ -7,6 +7,7 @@
 | State | Happy path | [STATE-01: restart after checkout health](scenarios/state-01.md) | Implemented; fresh-process recovery and replay checks |
 | State | Happy path | [STATE-02: new signal after a proposal](scenarios/state-02.md) | Implemented; two runs, fresh telemetry and retained proposal history |
 | Multiplayer | Happy path | [MP-01: human update during agent investigation](scenarios/mp-01.md) | Implemented; stale proposal rejection and scripted reassessment |
+| Evaluation | Happy path | [EVAL-01: candidate review](scenarios/eval-01.md) | Implemented; hard checks and illustrative rubric fixtures |
 
 - Scenario IDs are ordered within each topic: happy paths, then negative cases, then edge cases. A happy path means the agent achieves its goal; service health need not be normal.
 - SDK checks use a synthetic model and MCP data; live reasoning quality is a separate question.
@@ -20,6 +21,7 @@
 | Deterministic application tests | Scope/schema checks, proposal readiness, stale references, local atomic saves, replay protection and competing processes; lock deadline uses a controlled clock | Does not verify database transactions, database durability, cross-host coordination or model judgment |
 | SDK/MCP integration tests | Real SDK orchestration with a local synthetic Messages API and MCP sources | Tool choices and replies are scripted |
 | Scenario evaluations | Five readable contracts with generated traces; STATE-01 uses two fresh Python processes | Reuses synthetic fixtures and expected replies; not an independent dataset or model benchmark |
+| Candidate-review scenario | EVAL-01: two useful alternatives and one unsupported conclusion; Markdown review report | Hard checks run; semantic ratings/verdicts are illustrative fixtures, not independent judgments |
 | Semantic evaluation | Planned: held-out incidents, live model runs and human review; see [Evaluation](evaluation.md) | Not run; no accuracy or reasoning-quality claim |
 
 - Run `uv run python -m unittest -v` and `uv run python -m evals` from the repository root.

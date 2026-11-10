@@ -16,6 +16,8 @@ uv run python -m evals
 
 Default runs use real Claude Agent SDK/MCP orchestration with a deterministic mock model and synthetic sources. No real model credentials are needed. Evaluations run CORE-01/02, STATE-01/02 and MP-01; they verify workflow and coordination, not independent reasoning.
 
+EVAL-01 adds a candidate-review report using application hard checks and illustrative rubric ratings: `uv run python -m evals.eval01`. Ratings are synthetic review fixtures, not independent judgment. It is also included in `uv run python -m evals`.
+
 The design uses a durable relational database outside workers for shared Incident state. Transactions save related changes together; revision checks reject stale updates. The database adapter is not implemented; current persistence checks use a local file adapter. Use `--state PATH`, then `--state PATH --resume` for local recovery checks.
 
 ## Current boundaries
